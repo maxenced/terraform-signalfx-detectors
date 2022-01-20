@@ -34,6 +34,7 @@
 - [azure-event-hub](#azure-event-hub)
 - [azure-express-route](#azure-express-route)
 - [azure-firewall](#azure-firewall)
+- [azure-frontdoor-v2](#azure-frontdoor-v2)
 - [azure-functions](#azure-functions)
 - [azure-key-vault](#azure-key-vault)
 - [azure-load-balancer](#azure-load-balancer)
@@ -397,6 +398,17 @@
 |Azure firewall snat port utilization|X|X|-|-|-|
 |Azure firewall throughput|X|X|X|X|-|
 |Azure firewall health state|X|X|-|-|-|
+
+
+## azure-frontdoor-v2
+
+|Detector|Critical|Major|Minor|Warning|Info|
+|---|---|---|---|---|---|
+|Azure FrontDoor v2 heartbeat|X|-|-|-|-|
+|Azure FrontDoor v2 http errors|X|X|-|-|-|
+|Azure FrontDoor v2 probes health|X|X|-|-|-|
+|Azure FrontDoor v2 cache rate|-|-|-|X|-|
+|Azure FrontDoor v2 waf logs|-|X|-|-|-|
 
 
 ## azure-functions
