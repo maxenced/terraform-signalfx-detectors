@@ -1,0 +1,199 @@
+# AZURE-FRONTDOOR-V2 SignalFx detectors
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## How to use this module?
+
+This directory defines a [Terraform](https://www.terraform.io/)
+[module](https://www.terraform.io/docs/modules/usage.html) you can use in your
+existing [stack](https://github.com/claranet/terraform-signalfx-detectors/wiki/Getting-started#stack) by adding a
+`module` configuration and setting its `source` parameter to URL of this folder:
+
+```hcl
+module "signalfx-detectors-integration-azure-frontdoor-v2" {
+  source = "github.com/claranet/terraform-signalfx-detectors.git//modules/integration_azure-frontdoor-v2?ref={revision}"
+
+  environment   = var.environment
+  notifications = local.notifications
+}
+```
+
+Note the following parameters:
+
+* `source`: Use this parameter to specify the URL of the module. The double slash (`//`) is intentional  and required.
+  Terraform uses it to specify subfolders within a Git repo (see [module
+  sources](https://www.terraform.io/docs/modules/sources.html)). The `ref` parameter specifies a specific Git tag in
+  this repository. It is recommended to use the latest "pinned" version in place of `{revision}`. Avoid using a branch
+  like `master` except for testing purpose. Note that every modules in this repository are available on the Terraform
+  [registry](https://registry.terraform.io/modules/claranet/detectors/signalfx) and we recommend using it as source
+  instead of `git` which is more flexible but less future-proof.
+
+* `environment`: Use this parameter to specify the
+  [environment](https://github.com/claranet/terraform-signalfx-detectors/wiki/Getting-started#environment) used by this
+  instance of the module.
+  Its value will be added to the `prefixes` list at the start of the [detector
+  name](https://github.com/claranet/terraform-signalfx-detectors/wiki/Templating#example).
+  In general, it will also be used in the `filtering` internal sub-module to [apply
+  filters](https://github.com/claranet/terraform-signalfx-detectors/wiki/Guidance#filtering) based on our default
+  [tagging convention](https://github.com/claranet/terraform-signalfx-detectors/wiki/Tagging-convention) by default.
+
+* `notifications`: Use this parameter to define where alerts should be sent depending on their severity. It consists
+  of a Terraform [object](https://www.terraform.io/docs/configuration/types.html#object-) where each key represents an
+  available [detector rule severity](https://docs.signalfx.com/en/latest/detect-alert/set-up-detectors.html#severity)
+  and its value is a list of recipients. Every recipients must respect the [detector notification
+  format](https://registry.terraform.io/providers/splunk-terraform/signalfx/latest/docs/resources/detector#notification-format).
+  Check the [notification binding](https://github.com/claranet/terraform-signalfx-detectors/wiki/Notifications-binding)
+  documentation to understand the recommended role of each severity.
+
+These 3 parameters alongs with all variables defined in [common-variables.tf](common-variables.tf) are common to all
+[modules](../) in this repository. Other variables, specific to this module, are available in
+[variables.tf](variables.tf) and [variables-gen.tf](variables-gen.tf).
+In general, the default configuration "works" but all of these Terraform
+[variables](https://www.terraform.io/docs/configuration/variables.html) make it possible to
+customize the detectors behavior to better fit your needs.
+
+Most of them represent usual tips and rules detailled in the
+[guidance](https://github.com/claranet/terraform-signalfx-detectors/wiki/Guidance) documentation and listed in the
+common [variables](https://github.com/claranet/terraform-signalfx-detectors/wiki/Variables) dedicated documentation.
+
+Feel free to explore the [wiki](https://github.com/claranet/terraform-signalfx-detectors/wiki) for more information about
+general usage of this repository.
+
+## What are the available detectors in this module?
+
+This module creates the following SignalFx detectors which could contain one or multiple alerting rules:
+
+|Detector|Critical|Major|Minor|Warning|Info|
+|---|---|---|---|---|---|
+|Azure FrontDoor v2 heartbeat|X|-|-|-|-|
+|Azure FrontDoor v2 http errors|X|X|-|-|-|
+|Azure FrontDoor v2 probes health|X|X|-|-|-|
+|Azure FrontDoor v2 cache rate|-|-|-|X|-|
+|Azure FrontDoor v2 waf logs|-|X|-|-|-|
+
+## How to collect required metrics?
+
+This module uses metrics available from
+the [Azure integration](https://docs.signalfx.com/en/latest/integrations/azure-info.html) configurable
+with this Terraform [module](https://github.com/claranet/terraform-signalfx-integrations/tree/master/cloud/azure).
+
+
+This module uses the [Sudden Change](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent) functions for the **waf logs** detector.  
+
+The detectors of this module uses metrics from the [FAME](https://github.com/claranet/fame) tool for Azure.  
+Check its documentation to install and configure it appropriately.
+
+The Azure Front Door Premium/Standard resource is not yet integrated with the Azure SFX integration.  
+You will find the FAME queries used by this module below.
+
+### Pre-requisites FAME queries
+
+Here are the must have FAME queries for your Front Door v2 resources : 
+
+```hcl
+resource "azurerm_storage_table_entity" "query_fd_status_code" {
+  storage_account_name = [FAME_storage_account_name]
+  table_name           = [FAME_storage_queries_table_name]
+
+  partition_key = "LogQuery"
+  row_key       = "frontdoor_http_status_code"
+  entity = {
+    MetricName : "fame.azure.frontdoor.http_status_code"
+    MetricType : "gauge"
+    Query : <<EOQ
+        AzureDiagnostics
+        | where ResourceProvider == "MICROSOFT.CDN"
+        | where Category == "FrontDoorAccessLog"
+        | where TimeGenerated > ago(20m)
+        | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), http_status_code=tostring(toint(httpStatusCode_d)), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | order by timestamp desc
+      EOQ
+  }
+}
+
+resource "azurerm_storage_table_entity" "query_fd_health_probe_logs" {
+  storage_account_name = [FAME_storage_account_name]
+  table_name           = [FAME_storage_queries_table_name]
+
+  partition_key = "LogQuery"
+  row_key       = "frontdoor_health_probe_logs"
+  entity = {
+    MetricName : "fame.azure.frontdoor.health_probe_logs"
+    MetricType : "gauge"
+    Query : <<EOQ
+        AzureDiagnostics
+        | where ResourceProvider == "MICROSOFT.CDN"
+        | where Category == "FrontDoorHealthProbeLog"
+        | where TimeGenerated > ago(20m)
+        | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), result=(result_s), http_status_code=tostring(toint(httpStatusCode_d)), origin_name=(originName_s),azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | order by timestamp desc
+      EOQ
+  }
+}
+
+resource "azurerm_storage_table_entity" "query_fd_waf_logs" {
+  storage_account_name = [FAME_storage_account_name]
+  table_name           = [FAME_storage_queries_table_name]
+
+  partition_key = "LogQuery"
+  row_key       = "frontdoor_waf_logs"
+  entity = {
+    MetricName : "fame.azure.frontdoor.waf_logs"
+    MetricType : "gauge"
+    Query : <<EOQ
+        AzureDiagnostics
+        | where ResourceProvider == "MICROSOFT.CDN"
+        | where Category == "FrontDoorWebApplicationFirewallLog"
+        | where TimeGenerated > ago(20m)
+        | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), action=(action_s), policy=(policy_s), host=(host_s), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | order by timestamp desc
+      EOQ
+  }
+}
+
+resource "azurerm_storage_table_entity" "query_fd_cache_rate" {
+  storage_account_name = [FAME_storage_account_name]
+  table_name           = [FAME_storage_queries_table_name]
+
+  partition_key = "LogQuery"
+  row_key       = "frontdoor_cache_rate"
+  entity = {
+    MetricName : "fame.azure.frontdoor.cache_rate"
+    MetricType : "gauge"
+    Query : <<EOQ
+      AzureDiagnostics 
+      | where Category == "FrontDoorAccessLog"
+      | where TimeGenerated > ago(20m)
+      | summarize metric_value = tostring(toint((todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) / (todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) + todouble(countif(cacheStatus_s == "MISS" or cacheStatus_s == "CONFIG_NOCACHE")))) * 100)) by timestamp=bin(TimeGenerated, 1m), endpoint=endpoint_s, azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+      | order by timestamp desc
+      EOQ
+  }
+}
+```
+
+Without them you will not be able to have your metrics and detectors working.
+
+### Metrics
+
+
+Here is the list of required metrics for detectors in this module.
+
+* `fame.azure.frontdoor.cache_rate`
+* `fame.azure.frontdoor.health_probe_logs`
+* `fame.azure.frontdoor.http_status_code`
+* `fame.azure.frontdoor.waf_logs`
+
+
+
+
+## Related documentation
+
+* [Terraform SignalFx provider](https://registry.terraform.io/providers/splunk-terraform/signalfx/latest/docs)
+* [Terraform SignalFx detector](https://registry.terraform.io/providers/splunk-terraform/signalfx/latest/docs/resources/detector)
+* [Azure Monitor Metrics](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported)
+* [Azure Front Door Standard/Premium logs and metrics](https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-monitor-metrics)
+* [FAME - Function for Azure Monitoring Extension](https://github.com/claranet/fame)
+* [Sudden Change SFX functions](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent)
