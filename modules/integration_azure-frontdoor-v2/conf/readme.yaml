@@ -1,0 +1,105 @@
+documentations:
+  - name: Azure Monitor Metrics
+    url: 'https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported'
+  - name: Azure Front Door Standard/Premium logs and metrics
+    url: 'https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-monitor-metrics'
+  - name: FAME - Function for Azure Monitoring Extension
+    url: 'https://github.com/claranet/fame'
+  - name: Sudden Change SFX functions
+    url: 'https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent'
+
+source_doc: |
+  This module uses the [Sudden Change](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent) functions for the **waf logs** detector.  
+
+  The detectors of this module uses metrics from the [FAME](https://github.com/claranet/fame) tool for Azure.  
+  Check its documentation to install and configure it appropriately.
+
+  The Azure Front Door Premium/Standard resource is not yet integrated with the Azure SFX integration.  
+  You will find the FAME queries used by this module below.
+
+  ### Pre-requisites FAME queries
+
+  Here are the must have FAME queries for your Front Door v2 resources : 
+
+  ```hcl
+  resource "azurerm_storage_table_entity" "query_fd_status_code" {
+    storage_account_name = [FAME_storage_account_name]
+    table_name           = [FAME_storage_queries_table_name]
+
+    partition_key = "LogQuery"
+    row_key       = "frontdoor_http_status_code"
+    entity = {
+      MetricName : "fame.azure.frontdoor.http_status_code"
+      MetricType : "gauge"
+      Query : <<EOQ
+          AzureDiagnostics
+          | where ResourceProvider == "MICROSOFT.CDN"
+          | where Category == "FrontDoorAccessLog"
+          | where TimeGenerated > ago(20m)
+          | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), http_status_code=tostring(toint(httpStatusCode_d)), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+          | order by timestamp desc
+        EOQ
+    }
+  }
+
+  resource "azurerm_storage_table_entity" "query_fd_health_probe_logs" {
+    storage_account_name = [FAME_storage_account_name]
+    table_name           = [FAME_storage_queries_table_name]
+
+    partition_key = "LogQuery"
+    row_key       = "frontdoor_health_probe_logs"
+    entity = {
+      MetricName : "fame.azure.frontdoor.health_probe_logs"
+      MetricType : "gauge"
+      Query : <<EOQ
+          AzureDiagnostics
+          | where ResourceProvider == "MICROSOFT.CDN"
+          | where Category == "FrontDoorHealthProbeLog"
+          | where TimeGenerated > ago(20m)
+          | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), result=(result_s), http_status_code=tostring(toint(httpStatusCode_d)), origin_name=(originName_s),azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+          | order by timestamp desc
+        EOQ
+    }
+  }
+
+  resource "azurerm_storage_table_entity" "query_fd_waf_logs" {
+    storage_account_name = [FAME_storage_account_name]
+    table_name           = [FAME_storage_queries_table_name]
+
+    partition_key = "LogQuery"
+    row_key       = "frontdoor_waf_logs"
+    entity = {
+      MetricName : "fame.azure.frontdoor.waf_logs"
+      MetricType : "gauge"
+      Query : <<EOQ
+          AzureDiagnostics
+          | where ResourceProvider == "MICROSOFT.CDN"
+          | where Category == "FrontDoorWebApplicationFirewallLog"
+          | where TimeGenerated > ago(20m)
+          | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), action=(action_s), policy=(policy_s), host=(host_s), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+          | order by timestamp desc
+        EOQ
+    }
+  }
+
+  resource "azurerm_storage_table_entity" "query_fd_cache_rate" {
+    storage_account_name = [FAME_storage_account_name]
+    table_name           = [FAME_storage_queries_table_name]
+
+    partition_key = "LogQuery"
+    row_key       = "frontdoor_cache_rate"
+    entity = {
+      MetricName : "fame.azure.frontdoor.cache_rate"
+      MetricType : "gauge"
+      Query : <<EOQ
+        AzureDiagnostics 
+        | where Category == "FrontDoorAccessLog"
+        | where TimeGenerated > ago(20m)
+        | summarize metric_value = tostring(toint((todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) / (todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) + todouble(countif(cacheStatus_s == "MISS" or cacheStatus_s == "CONFIG_NOCACHE")))) * 100)) by timestamp=bin(TimeGenerated, 1m), endpoint=endpoint_s, azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | order by timestamp desc
+        EOQ
+    }
+  }
+  ```
+
+  Without them you will not be able to have your metrics and detectors working.
