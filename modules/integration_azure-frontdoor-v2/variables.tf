@@ -36,12 +36,6 @@ variable "waf_logs_disabled" {
   default     = null
 }
 
-variable "waf_logs_disabled_critical" {
-  description = "Disable critical alerting rule for waf_logs detector"
-  type        = bool
-  default     = null
-}
-
 variable "waf_logs_disabled_major" {
   description = "Disable major alerting rule for waf_logs detector"
   type        = bool
