@@ -4,6 +4,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 :link: **Contents**
 
+- [azure-frontdoor-v2](#azure-frontdoor-v2)
 - [aws-alb](#aws-alb)
 - [aws-apigateway](#aws-apigateway)
 - [aws-beanstalk](#aws-beanstalk)
@@ -34,7 +35,6 @@
 - [azure-event-hub](#azure-event-hub)
 - [azure-express-route](#azure-express-route)
 - [azure-firewall](#azure-firewall)
-- [azure-frontdoor-v2](#azure-frontdoor-v2)
 - [azure-functions](#azure-functions)
 - [azure-key-vault](#azure-key-vault)
 - [azure-load-balancer](#azure-load-balancer)
@@ -105,6 +105,17 @@
 - [zookeeper](#zookeeper)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## azure-frontdoor-v2
+
+|Detector|Critical|Major|Minor|Warning|Info|
+|---|---|---|---|---|---|
+|Azure FrontDoor v2 heartbeat|X|-|-|-|-|
+|Azure FrontDoor v2 http errors|X|X|-|-|-|
+|Azure FrontDoor v2 probes health|X|X|-|-|-|
+|Azure FrontDoor v2 cache rate|-|-|-|X|-|
+|Azure FrontDoor v2 waf logs|-|X|-|-|-|
+
 
 ## aws-alb
 
@@ -398,17 +409,6 @@
 |Azure firewall snat port utilization|X|X|-|-|-|
 |Azure firewall throughput|X|X|X|X|-|
 |Azure firewall health state|X|X|-|-|-|
-
-
-## azure-frontdoor-v2
-
-|Detector|Critical|Major|Minor|Warning|Info|
-|---|---|---|---|---|---|
-|Azure FrontDoor v2 heartbeat|X|-|-|-|-|
-|Azure FrontDoor v2 http errors|X|X|-|-|-|
-|Azure FrontDoor v2 probes health|X|X|-|-|-|
-|Azure FrontDoor v2 cache rate|-|-|-|X|-|
-|Azure FrontDoor v2 waf logs|-|X|-|-|-|
 
 
 ## azure-functions
