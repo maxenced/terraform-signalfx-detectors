@@ -99,7 +99,7 @@ You will find the FAME queries used by this module below.
 
 ### Pre-requisites FAME queries
 
-Here are the must have FAME queries for your Front Door v2 resources : 
+Here are the must have FAME queries for your Front Door v2 resources: 
 
 ```hcl
 resource "azurerm_storage_table_entity" "query_fd_status_code" {
