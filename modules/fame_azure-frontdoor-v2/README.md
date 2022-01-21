@@ -2,14 +2,6 @@
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-:link: **Contents**
-
-- [How to use this module?](#how-to-use-this-module)
-- [What are the available detectors in this module?](#what-are-the-available-detectors-in-this-module)
-- [How to collect required metrics?](#how-to-collect-required-metrics)
-  - [Pre-requisites FAME queries](#pre-requisites-fame-queries)
-  - [Metrics](#metrics)
-- [Related documentation](#related-documentation)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -21,8 +13,8 @@ existing [stack](https://github.com/claranet/terraform-signalfx-detectors/wiki/G
 `module` configuration and setting its `source` parameter to URL of this folder:
 
 ```hcl
-module "signalfx-detectors-integration-azure-frontdoor-v2" {
-  source = "github.com/claranet/terraform-signalfx-detectors.git//modules/integration_azure-frontdoor-v2?ref={revision}"
+module "signalfx-detectors-fame-azure-frontdoor-v2" {
+  source = "github.com/claranet/terraform-signalfx-detectors.git//modules/fame_azure-frontdoor-v2?ref={revision}"
 
   environment   = var.environment
   notifications = local.notifications
@@ -85,9 +77,9 @@ This module creates the following SignalFx detectors which could contain one or 
 ## How to collect required metrics?
 
 This module uses metrics available from
-the [Azure integration](https://docs.signalfx.com/en/latest/integrations/azure-info.html) configurable
-with this Terraform [module](https://github.com/claranet/terraform-signalfx-integrations/tree/master/cloud/azure).
-
+[SignalFx
+organization](https://docs.signalfx.com/en/latest/integrations/integrations-reference/integrations.signalfx.organization.metrics.html).
+There are always available and do not need any configuration to work.
 
 This module uses the [Sudden Change](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent) functions for the **waf logs** detector.  
 
