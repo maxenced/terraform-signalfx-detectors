@@ -78,9 +78,9 @@ This module creates the following SignalFx detectors which could contain one or 
 |---|---|---|---|---|---|
 |Azure FrontDoor v2 heartbeat|X|-|-|-|-|
 |Azure FrontDoor v2 http errors|X|X|-|-|-|
-|Azure FrontDoor v2 probes health|X|X|-|-|-|
-|Azure FrontDoor v2 cache rate|-|-|-|X|-|
-|Azure FrontDoor v2 waf logs|-|X|-|-|-|
+|Azure FrontDoor v2 probes errors|X|X|-|-|-|
+|Azure FrontDoor v2 cache hit rate|-|-|-|X|-|
+|Azure FrontDoor v2 waf actions|-|X|-|-|-|
 
 ## How to collect required metrics?
 
@@ -89,7 +89,7 @@ This module uses metrics available from
 organization](https://docs.signalfx.com/en/latest/integrations/integrations-reference/integrations.signalfx.organization.metrics.html).
 There are always available and do not need any configuration to work.
 
-This module uses the [Sudden Change](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent) functions for the **waf logs** detector.  
+This module uses the [Sudden Change](https://github.com/signalfx/signalflow-library/tree/master/library/signalfx/detectors/against_recent) functions for the **waf actions** detector.  
 
 The detectors of this module uses metrics from the [FAME](https://github.com/claranet/fame) tool for Azure.  
 Check its documentation to install and configure it appropriately.
@@ -102,14 +102,14 @@ You will find the FAME queries used by this module below.
 Here are the must have FAME queries for your Front Door v2 resources: 
 
 ```hcl
-resource "azurerm_storage_table_entity" "query_fd_status_code" {
+resource "azurerm_storage_table_entity" "query_fd_response_status" {
   storage_account_name = [FAME_storage_account_name]
   table_name           = [FAME_storage_queries_table_name]
 
   partition_key = "LogQuery"
-  row_key       = "frontdoor_http_status_code"
+  row_key       = "frontdoor_response_status"
   entity = {
-    MetricName : "fame.azure.frontdoor.http_status_code"
+    MetricName : "fame.azure.frontdoor.response_status"
     MetricType : "gauge"
     Query : <<EOQ
         AzureDiagnostics
@@ -122,14 +122,14 @@ resource "azurerm_storage_table_entity" "query_fd_status_code" {
   }
 }
 
-resource "azurerm_storage_table_entity" "query_fd_health_probe_logs" {
+resource "azurerm_storage_table_entity" "query_fd_probe_response_status" {
   storage_account_name = [FAME_storage_account_name]
   table_name           = [FAME_storage_queries_table_name]
 
   partition_key = "LogQuery"
-  row_key       = "frontdoor_health_probe_logs"
+  row_key       = "frontdoor_probe_response_status"
   entity = {
-    MetricName : "fame.azure.frontdoor.health_probe_logs"
+    MetricName : "fame.azure.frontdoor.probe_response_status"
     MetricType : "gauge"
     Query : <<EOQ
         AzureDiagnostics
@@ -142,41 +142,41 @@ resource "azurerm_storage_table_entity" "query_fd_health_probe_logs" {
   }
 }
 
-resource "azurerm_storage_table_entity" "query_fd_waf_logs" {
+resource "azurerm_storage_table_entity" "query_fd_waf_actions" {
   storage_account_name = [FAME_storage_account_name]
   table_name           = [FAME_storage_queries_table_name]
 
   partition_key = "LogQuery"
-  row_key       = "frontdoor_waf_logs"
+  row_key       = "frontdoor_waf_actions"
   entity = {
-    MetricName : "fame.azure.frontdoor.waf_logs"
+    MetricName : "fame.azure.frontdoor.waf_actions"
     MetricType : "gauge"
     Query : <<EOQ
         AzureDiagnostics
         | where ResourceProvider == "MICROSOFT.CDN"
         | where Category == "FrontDoorWebApplicationFirewallLog"
         | where TimeGenerated > ago(20m)
-        | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), action=(action_s), policy=(policy_s), host=(host_s), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | summarize metric_value=count() by timestamp=bin(TimeGenerated, 1m), action=tolower(action_s), policy=(policy_s), host=(host_s), azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
         | order by timestamp desc
       EOQ
   }
 }
 
-resource "azurerm_storage_table_entity" "query_fd_cache_rate" {
+resource "azurerm_storage_table_entity" "query_fd_cache_hit_rate" {
   storage_account_name = [FAME_storage_account_name]
   table_name           = [FAME_storage_queries_table_name]
 
   partition_key = "LogQuery"
-  row_key       = "frontdoor_cache_rate"
+  row_key       = "frontdoor_cache_hit_rate"
   entity = {
-    MetricName : "fame.azure.frontdoor.cache_rate"
+    MetricName : "fame.azure.frontdoor.cache_hit_rate"
     MetricType : "gauge"
     Query : <<EOQ
-      AzureDiagnostics 
-      | where Category == "FrontDoorAccessLog"
-      | where TimeGenerated > ago(20m)
-      | summarize metric_value = tostring(toint((todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) / (todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) + todouble(countif(cacheStatus_s == "MISS" or cacheStatus_s == "CONFIG_NOCACHE")))) * 100)) by timestamp=bin(TimeGenerated, 1m), endpoint=endpoint_s, azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
-      | order by timestamp desc
+        AzureDiagnostics 
+        | where Category == "FrontDoorAccessLog"
+        | where TimeGenerated > ago(20m)
+        | summarize metric_value = tostring(todouble(countif(cacheStatus_s == "HIT" or cacheStatus_s == "REMOTE_HIT")) / count() * 100) by timestamp=bin(TimeGenerated, 1m), endpoint=endpoint_s, azure_resource_name=Resource, azure_resource_group_name=ResourceGroup, subscription_id=SubscriptionId
+        | order by timestamp desc
       EOQ
   }
 }
@@ -189,10 +189,10 @@ Without them you will not be able to have your metrics and detectors working.
 
 Here is the list of required metrics for detectors in this module.
 
-* `fame.azure.frontdoor.cache_rate`
-* `fame.azure.frontdoor.health_probe_logs`
-* `fame.azure.frontdoor.http_status_code`
-* `fame.azure.frontdoor.waf_logs`
+* `fame.azure.frontdoor.cache_hit_rate`
+* `fame.azure.frontdoor.probe_response_status`
+* `fame.azure.frontdoor.response_status`
+* `fame.azure.frontdoor.waf_actions`
 
 
 
