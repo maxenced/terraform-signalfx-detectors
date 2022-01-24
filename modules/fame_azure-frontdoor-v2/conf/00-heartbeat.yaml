@@ -6,7 +6,7 @@ aggregation: true
 
 signals:
   A:
-    metric: fame.azure.frontdoor.health_probe_logs
+    metric: fame.azure.frontdoor.probe_response_status
     extrapolation: 'zero'
     rollup: 'sum'
   signal:

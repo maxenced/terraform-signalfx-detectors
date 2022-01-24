@@ -1,6 +1,6 @@
-output "cache_rate" {
-  description = "Detector resource for cache_rate"
-  value       = signalfx_detector.cache_rate
+output "cache_hit_rate" {
+  description = "Detector resource for cache_hit_rate"
+  value       = signalfx_detector.cache_hit_rate
 }
 
 output "heartbeat" {
@@ -13,13 +13,13 @@ output "http_errors" {
   value       = signalfx_detector.http_errors
 }
 
-output "probes_health" {
-  description = "Detector resource for probes_health"
-  value       = signalfx_detector.probes_health
+output "probes_errors" {
+  description = "Detector resource for probes_errors"
+  value       = signalfx_detector.probes_errors
 }
 
-output "waf_logs" {
-  description = "Detector resource for waf_logs"
-  value       = signalfx_detector.waf_logs
+output "waf_actions" {
+  description = "Detector resource for waf_actions"
+  value       = signalfx_detector.waf_actions
 }
 

@@ -112,9 +112,9 @@
 |---|---|---|---|---|---|
 |Azure FrontDoor v2 heartbeat|X|-|-|-|-|
 |Azure FrontDoor v2 http errors|X|X|-|-|-|
-|Azure FrontDoor v2 probes health|X|X|-|-|-|
-|Azure FrontDoor v2 cache rate|-|-|-|X|-|
-|Azure FrontDoor v2 waf logs|-|X|-|-|-|
+|Azure FrontDoor v2 probes errors|X|X|-|-|-|
+|Azure FrontDoor v2 cache hit rate|-|-|-|X|-|
+|Azure FrontDoor v2 waf actions|-|X|-|-|-|
 
 
 ## aws-alb
