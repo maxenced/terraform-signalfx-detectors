@@ -36,7 +36,7 @@ variable "waf_actions_disabled" {
   default     = null
 }
 
-variable "waf_actions_disabled_major" {
+variable "waf_actions_disabled_warning" {
   description = "Disable major alerting rule for waf_actions detector"
   type        = bool
   default     = null

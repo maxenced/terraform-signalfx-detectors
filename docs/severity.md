@@ -114,7 +114,7 @@
 |Azure FrontDoor v2 http errors|X|X|-|-|-|
 |Azure FrontDoor v2 probes errors|X|X|-|-|-|
 |Azure FrontDoor v2 cache hit rate|-|-|-|X|-|
-|Azure FrontDoor v2 waf actions|-|X|-|-|-|
+|Azure FrontDoor v2 waf actions|-|-|-|X|-|
 
 
 ## integration_aws-alb

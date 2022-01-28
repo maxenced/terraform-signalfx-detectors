@@ -80,7 +80,7 @@ This module creates the following SignalFx detectors which could contain one or 
 |Azure FrontDoor v2 http errors|X|X|-|-|-|
 |Azure FrontDoor v2 probes errors|X|X|-|-|-|
 |Azure FrontDoor v2 cache hit rate|-|-|-|X|-|
-|Azure FrontDoor v2 waf actions|-|X|-|-|-|
+|Azure FrontDoor v2 waf actions|-|-|-|X|-|
 
 ## How to collect required metrics?
 
