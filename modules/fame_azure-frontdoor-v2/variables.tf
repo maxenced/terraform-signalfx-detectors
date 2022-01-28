@@ -43,7 +43,19 @@ variable "waf_actions_disabled_major" {
 }
 
 variable "waf_actions_current_window_duration" {
-  description = "Minimum duration that conditions must be true before raising alert"
+  description = "The time range being monitored"
   type        = string
-  default     = "5m"
+  default     = "10m"
+}
+
+variable "waf_actions_historical_window_duration" {
+  description = "The time range being used to define the recent trend."
+  type        = string
+  default     = "3d"
+}
+
+variable "waf_actions_fire_num_stddev" {
+  description = "Number of standard deviations different from historical mean required to trigger"
+  type        = string
+  default     = "5"
 }
